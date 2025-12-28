@@ -23,13 +23,14 @@ It allows sellers to manage products, track orders, and monitor earnings through
 ```bash
 git clone https://github.com/AbdAlrahmanAboShefa/e-commerce-multivendor-dashboard.git
 cd e-commerce-multivendor-dashboard
-Setup backend:
+
+2. Setup backend:
 composer install
 cp .env.example .env
 php artisan key:generate
 php artisan migrate --seed
 php artisan serve
-Setup frontend:
+3. Setup frontend:
 cd vue-shop
 npm install
 npm run dev
