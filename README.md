@@ -24,17 +24,21 @@ It allows sellers to manage products, track orders, and monitor earnings through
 ```bash
 git clone https://github.com/AbdAlrahmanAboShefa/e-commerce-multivendor-dashboard.git
 cd e-commerce-multivendor-dashboard
-
+```
 #2. Setup backend:
+```bash
 composer install
 cp .env.example .env
 php artisan key:generate
 php artisan migrate --seed
-php artisan serve
+php artisan serve 
+```
 #3. Setup frontend:
+```bash
 cd vue-shop
 npm install
 npm run dev
+```
 #Frontend usually runs at http://localhost:5173 (Vite default)
 
 Backend API runs at http://127.0.0.1:8000
