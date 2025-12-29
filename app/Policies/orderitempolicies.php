@@ -13,7 +13,7 @@ class orderitempolicies
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        return $user->hasRole('seller') || $user->hasRole('admin');
     }
 
     /**

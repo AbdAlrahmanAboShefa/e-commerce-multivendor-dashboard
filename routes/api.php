@@ -31,7 +31,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'role:admin'])->group(functi
 Route::prefix('seller')->middleware(['auth:sanctum', 'role:seller'])->group(function () {
     Route::get('/dashboard', [SalesDashboardController::class, 'index']);
     Route::apiResource('products', ProductController::class)->only(['index', 'store','update','destroy','show']);
-    Route::patch('/order_items/{id}/status', [OrderItemsController::class, 'updateStatus']);
+    Route::patch('/order/items/{id}/status', [OrderItemsController::class, 'updateStatus']);
+    Route::get('/order/items', [OrderItemsController::class, 'index']);
 });
 
 // Product routes

@@ -19,15 +19,15 @@ class SalesDashboardController extends Controller
      $total_earning = order_item::where('seller_id', auth()->id())->where('status', 'delivered')->sum('seller_earnings');
   
      $latest_orders = auth()->user()->order()->latest()->take(5)->get();
-     $stats = cache()->remember('sales_stats_' . auth()->id(), 60, function () use ($product_count, $order_count, $total_earning) {
-         return [
+     
+         return response()->json([
              'product_count' => $product_count,
              'order_count' => $order_count,
              'total_earning' => $total_earning,
              
-  
-         ];
-     });
+
+         ]);
+     ;
      return response()->json($stats);
     
     }

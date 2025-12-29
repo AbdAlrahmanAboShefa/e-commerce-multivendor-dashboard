@@ -8,17 +8,18 @@
       <div class="nav-section">
         <h3 class="nav-label">Main</h3>
         
-        <RouterLink v-if="hasSpatieUserRole" to="/" class="nav-item" @click="closeSidebar">
+        <!-- Regular User -->
+        <RouterLink v-if="isUser" to="/" class="nav-item" @click="closeSidebar">
           <span class="icon">🏠</span>
           <span class="label">Products</span>
         </RouterLink>
 
-        <RouterLink v-if="hasSpatieUserRole" to="/cart" class="nav-item" @click="closeSidebar">
+        <RouterLink v-if="isUser" to="/cart" class="nav-item" @click="closeSidebar">
           <span class="icon">🛒</span>
           <span class="label">Cart</span>
         </RouterLink>
 
-        <RouterLink v-if="hasSpatieUserRole" to="/orders" class="nav-item" @click="closeSidebar">
+        <RouterLink v-if="isUser" to="/orders" class="nav-item" @click="closeSidebar">
           <span class="icon">📦</span>
           <span class="label">Orders</span>
         </RouterLink>
@@ -37,16 +38,30 @@
           <span class="icon">✉️</span>
           <span class="label">Seller Requests</span>
         </RouterLink>
-      </div>
-      <RouterLink to="/admin/categories" class="nav-item" @click="closeSidebar">
-          <span class="icon"></span>
+
+        <RouterLink to="/admin/categories" class="nav-item" @click="closeSidebar">
+          <span class="icon">📁</span>
           <span class="label">Categories</span>
         </RouterLink>
+      </div>
 
       <!-- Seller Section -->
-      <div v-if="isAuthenticated && hasSpatieUserRole" class="nav-section">
+      <div v-if="isSeller" class="nav-section">
         <h3 class="nav-label">Seller</h3>
-        
+
+        <RouterLink to="/seller/dashboard" class="nav-item" @click="closeSidebar">
+          <span class="icon">📊</span>
+          <span class="label">Dashboard</span>
+        </RouterLink>
+
+        <RouterLink to="/seller/products" class="nav-item" @click="closeSidebar">
+          <span class="icon">📦</span>
+          <span class="label">Products</span>
+        </RouterLink>
+      </div>
+
+      <!-- Become Seller Button (for users not yet sellers) -->
+      <div v-if="isUser && !isSeller" class="nav-section">
         <button class="nav-item" @click="becomeSeller">
           <span class="icon">🏪</span>
           <span class="label">Become Seller</span>
@@ -102,42 +117,29 @@ const isAuthenticated = ref(false);
 const userName = ref('');
 const user = ref(null);
 
-function getRoleFromUser(u) {
-  if (!u) return null;
-  if (u.role) return u.role;
-  if (u.role_name) return u.role_name;
-  if (u.roles && Array.isArray(u.roles) && u.roles.length) return u.roles[0];
-  if (typeof u.type === 'string') return u.type;
-  return null;
-}
-
-const hasSpatieUserRole = computed(() => {
-  const u = user.value;
-  if (!u) return false;
-  if (Array.isArray(u.roles)) {
-    return u.roles.some(r => r && typeof r.name === 'string' && r.name.toLowerCase() === 'user');
-  }
-  return false;
-});
-
+/* =========================
+   Computed roles
+========================= */
 const isAdmin = computed(() => {
-  const u = user.value;
-  if (!u) return false;
-  if (u.role === 'admin') return true;
-  if (typeof u.hasRole === 'function' && u.hasRole('admin')) return true;
-  if (Array.isArray(u.roles)) {
-    return u.roles.some(r => r && (r.name === 'admin' || r === 'admin'));
-  }
-  return false;
+  if (!user.value) return false;
+  return user.value.role === 'admin' || (Array.isArray(user.value.roles) && user.value.roles.some(r => r === 'admin' || r?.name === 'admin'));
 });
 
-const toggleSidebar = () => {
-  isOpen.value = !isOpen.value;
-};
+const isSeller = computed(() => {
+  if (!user.value) return false;
+  return Array.isArray(user.value.roles) && user.value.roles.some(r => r === 'seller' || r?.name === 'seller');
+});
 
-const closeSidebar = () => {
-  isOpen.value = false;
-};
+const isUser = computed(() => {
+  if (!user.value) return false;
+  return Array.isArray(user.value.roles) && user.value.roles.some(r => r === 'user' || r?.name === 'user');
+});
+
+/* =========================
+   Sidebar functions
+========================= */
+const toggleSidebar = () => { isOpen.value = !isOpen.value; };
+const closeSidebar = () => { isOpen.value = false; };
 
 const logout = () => {
   localStorage.removeItem('auth_token');
@@ -146,51 +148,6 @@ const logout = () => {
   closeSidebar();
   router.push('/login');
 };
-
-onMounted(() => {
-  const token = localStorage.getItem('auth_token');
-  isAuthenticated.value = !!token;
-  const raw = localStorage.getItem('user');
-  if (raw) {
-    try {
-      const userData = JSON.parse(raw);
-      user.value = userData;
-      userName.value = userData.name || userData.email || 'User';
-    } catch (e) {
-      userName.value = 'User';
-      user.value = null;
-    }
-  }
-
-  // Debugging: log current state so you can inspect in browser console
-  try {
-    // eslint-disable-next-line no-console
-    console.debug('sidebar mount ->', { user: user.value, isAuthenticated: isAuthenticated.value, isUserRole: isUserRole.value });
-  } catch (e) {}
-
-  // Try to fetch fresh user info from API (same approach as Navbar)
-  async function fetchUser() {
-    if (!isAuthenticated.value) return;
-    try {
-      const res = await api.get('/user');
-      const data = res.data || res.data?.user || null;
-      if (data) {
-        user.value = data;
-        userName.value = data.name || data.email || userName.value || 'User';
-        try { localStorage.setItem('user', JSON.stringify(user.value)); } catch (e) {}
-        try {
-          // eslint-disable-next-line no-console
-          console.debug('sidebar fetchUser ->', { user: user.value, isAuthenticated: isAuthenticated.value, isUserRole: isUserRole.value });
-        } catch (e) {}
-      }
-    } catch (e) {
-      // ignore fetch errors; keep localStorage fallback
-      // console.error('sidebar: failed to fetch user', e);
-    }
-  }
-
-  fetchUser();
-});
 
 async function becomeSeller() {
   try {
@@ -202,6 +159,41 @@ async function becomeSeller() {
     alert('Failed to send seller request.');
   }
 }
+
+/* =========================
+   Load user
+========================= */
+onMounted(() => {
+  const token = localStorage.getItem('auth_token');
+  isAuthenticated.value = !!token;
+
+  const raw = localStorage.getItem('user');
+  if (raw) {
+    try {
+      const userData = JSON.parse(raw);
+      user.value = userData;
+      userName.value = userData.name || userData.email || 'User';
+    } catch {
+      userName.value = 'User';
+      user.value = null;
+    }
+  }
+
+  async function fetchUser() {
+    if (!isAuthenticated.value) return;
+    try {
+      const res = await api.get('/user');
+      const data = res.data?.user || res.data;
+      if (data) {
+        user.value = data;
+        userName.value = data.name || data.email || 'User';
+        try { localStorage.setItem('user', JSON.stringify(user.value)); } catch {}
+      }
+    } catch {}
+  }
+
+  fetchUser();
+});
 </script>
 
 <style scoped>

@@ -12,6 +12,7 @@ class OrderItemsController extends Controller
     public function __construct(OrderItemService $OrderItemService)
     {
         $this->OrderItemService = $OrderItemService;
+        
     }
 
      /**
@@ -30,5 +31,11 @@ class OrderItemsController extends Controller
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 400);
         }
+    }
+    public function index()
+    {
+        $order_items = $this->OrderItemService->getAllOrderItems();
+        $this->authorize('viewAny', order_item::class);
+        return response()->json($order_items);
     }
 }
