@@ -38,15 +38,11 @@
       <tbody>
         <tr v-for="o in orders" :key="o.id">
           <td>#{{ o.order_id }}</td>
-          <td>
-            {{ o.product?.name || 'Product #' + o.product_id }}
-          </td>
+          <td>{{ o.product?.name || 'Product #' + o.product_id }}</td>
           <td>{{ o.quantity }}</td>
           <td>${{ (parseFloat(o.price) * o.quantity).toFixed(2) }}</td>
           <td>
-            <span :class="['status', o.status]">
-              {{ o.status }}
-            </span>
+            <span :class="['status', o.status]">{{ o.status }}</span>
           </td>
           <td>
             <button
@@ -82,17 +78,17 @@ const orders = ref([]);
 ===================== */
 const fetchDashboard = async () => {
   try {
+    // 1️⃣ Dashboard stats (SOURCE OF TRUTH)
+    const resStats = await api.get('/seller/dashboard');
+    stats.value.products = Number(resStats.data.product_count);
+    stats.value.deliveredOrders = Number(resStats.data.order_count);
+    stats.value.earnings = resStats.data.total_earning;
+
+    // 2️⃣ Orders list (for table)
     const resOrders = await api.get('/seller/order/items');
     orders.value = Array.isArray(resOrders.data) ? resOrders.data : [];
-
-    // Compute stats
-    stats.value.products = [...new Set(orders.value.map(o => o.product_id))].length;
-    stats.value.deliveredOrders = orders.value.filter(o => o.status === 'delivered').length;
-    stats.value.earnings = orders.value
-      .reduce((sum, o) => sum + parseFloat(o.seller_earnings || 0), 0)
-      .toFixed(2);
   } catch (e) {
-    console.error('Failed to fetch seller orders:', e);
+    console.error('Failed to fetch seller dashboard:', e);
     orders.value = [];
   }
 };
@@ -102,7 +98,9 @@ const fetchDashboard = async () => {
 ===================== */
 const updateStatus = async (orderItemId, newStatus) => {
   try {
-    await api.patch(`/seller/order/items/${orderItemId}/status`, { status: newStatus });
+    await api.patch(`/seller/order/items/${orderItemId}/status`, {
+      status: newStatus
+    });
     fetchDashboard();
   } catch (e) {
     console.error('Failed to update order status:', e);

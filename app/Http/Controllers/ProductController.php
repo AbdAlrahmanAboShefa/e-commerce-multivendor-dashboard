@@ -26,9 +26,8 @@ class ProductController extends Controller
         $user = auth()->user();
         $query = Product::with('category')->with('seller');
         if($user && $user->hasrole('seller')){
-            $query = Product::with('category')->where('seller_id', auth()->id());
-            $this->authorize('view', $query->first() ?? new Product());
-            return response()->json($query->get());
+            $products = $query->where('seller_id', $user->id)->get();
+            return response()->json($products);
         }else{
 
         $allowedSorts = ['price', 'name', 'created_at'];
